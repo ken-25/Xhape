@@ -1,0 +1,21 @@
+{
+  "name": "xhape",
+  "version": "1.0.0",
+  "description": "A modern and lightweight XAML geometry editor for the web.",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "xaml",
+    "geometry",
+    "svg",
+    "editor",
+    "wpf",
+    "winui"
+  ],
+  "author": "ken-25",
+  "license": "MIT",
+  "devDependencies": {
+  }
+}

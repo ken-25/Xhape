@@ -4,7 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xhape</title>
+    <title>Xhape - XAML Geometry Visual Editor</title>
+    <meta name="description"
+        content="Xhapeは、WPF/WinUI向けのXAML Geometry (StreamGeometry) を視覚的に作成・編集できる無料のオンラインツールです。直感的な操作で図形を描画し、リアルタイムにXAMLコードを生成します。">
+    <meta name="keywords" content="XAML, Geometry, StreamGeometry, WPF, WinUI, SVG, Editor, エディタ, 開発ツール">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-P6MSHSY7XS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-P6MSHSY7XS');
+    </script>
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ken-25.github.io/Xhape/">
+    <meta property="og:title" content="Xhape - XAML Geometry Visual Editor">
+    <meta property="og:description" content="WPF/WinUI向けのXAML Geometryを視覚的に編集。リアルタイムにコードを生成。">
+    <meta property="og:image" content="assets/banner.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://ken-25.github.io/Xhape/">
+    <meta property="twitter:title" content="Xhape - XAML Geometry Visual Editor">
+    <meta property="twitter:description" content="WPF/WinUI向けのXAML Geometryを視覚的に編集。リアルタイムにコードを生成。">
+    <meta property="twitter:image" content="assets/banner.png">
+
     <link rel="icon" href="assets/icon.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -85,7 +112,8 @@
                 <div id="canvas-container" class="canvas-container">
                     <svg id="drawing-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
                         <defs>
-                            <pattern id="grid-pattern" x="-5" y="-5" width="10" height="10" patternUnits="userSpaceOnUse">
+                            <pattern id="grid-pattern" x="-5" y="-5" width="10" height="10"
+                                patternUnits="userSpaceOnUse">
                                 <circle cx="5" cy="5" r="0.25" fill="currentColor" opacity="0.3" />
                             </pattern>
                         </defs>
@@ -138,7 +166,8 @@
                         Copy
                     </button>
                 </div>
-                <textarea id="xaml-input" class="code-editor" spellcheck="false" placeholder="Paste XAML here..."></textarea>
+                <textarea id="xaml-input" class="code-editor" spellcheck="false"
+                    placeholder="Paste XAML here..."></textarea>
             </div>
 
             <div class="usage-tips">
@@ -155,6 +184,46 @@
             </div>
         </section>
     </main>
+
+    <footer>
+        <div class="footer-content">
+            <section class="about-section">
+                <h2>Xhape とは</h2>
+                <p>
+                    <strong>Xhape</strong> は、WPF や WinUI で使用される <strong>XAML Geometry (StreamGeometry)</strong>
+                    をブラウザ上で視覚的に作成・編集するためのオープンソース・ツールです。
+                </p>
+                <p>
+                    ベクターグラフィックスを手動でコード化する手間に代わり、直感的なマウス操作で Line, Rectangle, Circle, Path
+                    を描画できます。生成されたコードはリアルタイムに表示され、クリック一つでコピー可能です。
+                </p>
+            </section>
+            <section class="features-summary">
+                <h3>主な特徴</h3>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <span class="feature-icon">🎨</span>
+                        <span>ビジュアル編集</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🔄</span>
+                        <span>双方向同期</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🧲</span>
+                        <span>精密なスナップ</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🌐</span>
+                        <span>インストール不要</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Xhape Project. Released under the MIT License.</p>
+        </div>
+    </footer>
 
     <script src="js/generator.js"></script>
     <script src="js/parser.js"></script>
