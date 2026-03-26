@@ -85,6 +85,12 @@
                             <path d="M4 12V4h16v16h-8"></path>
                         </svg>
                     </button>
+                    <button class="tool-btn" data-tool="arc" title="Arc (A)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12 A7 7 0 1 1 17.33 17.45" />
+                        </svg>
+                    </button>
                 </div>
                 <div class="divider"></div>
                 <div class="tool-group">
@@ -97,6 +103,21 @@
                             <path d="M6 12v3c0 3.3 2.7 6 6 6s6-2.7 6-6v-3"></path>
                         </svg>
                     </button>
+                </div>
+                <div class="divider"></div>
+                <div class="tool-group view-settings">
+                    <div class="tool-field">
+                        <label for="canvas-width">W</label>
+                        <input type="number" id="canvas-width" value="100" min="10" max="1000" title="Canvas Width">
+                    </div>
+                    <div class="tool-field">
+                        <label for="canvas-height">H</label>
+                        <input type="number" id="canvas-height" value="100" min="10" max="1000" title="Canvas Height">
+                    </div>
+                    <div class="tool-field">
+                        <label for="grid-spacing">Grid</label>
+                        <input type="number" id="grid-spacing" value="10" min="1" max="100" title="Grid Spacing">
+                    </div>
                 </div>
                 <div class="divider"></div>
                 <button id="clear-btn" class="action-btn danger" title="Clear All">
@@ -140,26 +161,29 @@
                         <option value="StreamGeometry">StreamGeometry</option>
                         <option value="PathGeometry">PathGeometry</option>
                         <option value="Path">Path Element</option>
+                        <option value="SVG">SVG Path Tag</option>
                         <option value="Geometry">Geometry (Resource)</option>
                     </select>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label for="xaml-separator">Separator</label>
+                        <select id="xaml-separator">
+                            <option value=" ">Space (SVG)</option>
+                            <option value=",">Comma (XAML)</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="xaml-compact">Mode</label>
+                        <select id="xaml-compact">
+                            <option value="true">Compact</option>
+                            <option value="false">Readable</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="field">
                     <label for="xaml-key">x:Key</label>
                     <input type="text" id="xaml-key" value="Symbol.Custom">
-                </div>
-                <div class="field-row">
-                    <div class="field">
-                        <label for="canvas-width">Width</label>
-                        <input type="number" id="canvas-width" value="100" min="10" max="1000">
-                    </div>
-                    <div class="field">
-                        <label for="canvas-height">Height</label>
-                        <input type="number" id="canvas-height" value="100" min="10" max="1000">
-                    </div>
-                </div>
-                <div class="field">
-                    <label for="grid-spacing">Grid Spacing</label>
-                    <input type="number" id="grid-spacing" value="10" min="2" max="100">
                 </div>
             </div>
 

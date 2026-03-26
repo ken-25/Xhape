@@ -20,7 +20,9 @@ window.Editor = {
         dragStartPos: { x: 0, y: 0 },
         initialShapeState: null,
         isSnapEnabled: true,
-        outputFormat: 'StreamGeometry' // 'StreamGeometry', 'PathGeometry', 'Geometry', 'Path'
+        outputFormat: 'StreamGeometry', // 'StreamGeometry', 'PathGeometry', 'Geometry', 'Path', 'SVG'
+        coordinateSeparator: ' ', // ' ' or ','
+        isCompact: true
     },
 
     /**
@@ -67,6 +69,56 @@ window.Editor = {
         } else if (shape.type === 'path') {
             shape.points[handleIndex].x = pos.x;
             shape.points[handleIndex].y = pos.y;
+        } else if (shape.type === 'arc') {
+            const getAngle = (px, py) => Math.atan2(py - shape.cy, px - shape.cx);
+            
+            if (handleIndex === 0) { // Start Handle
+                const ang = getAngle(pos.x, pos.y);
+                shape.x1 = shape.cx + shape.rx * Math.cos(ang);
+                shape.y1 = shape.cy + shape.rx * Math.sin(ang);
+                
+                // Update largeArcFlag based on sweep
+                const ang2 = getAngle(shape.x2, shape.y2);
+                let diff = ang2 - ang;
+                if (shape.sweepFlag === 1) { // CW
+                    while (diff < 0) diff += 2 * Math.PI;
+                    while (diff > 2 * Math.PI) diff -= 2 * Math.PI;
+                    shape.largeArcFlag = diff > Math.PI ? 1 : 0;
+                } else { // CCW
+                    while (diff > 0) diff -= 2 * Math.PI;
+                    while (diff < -2 * Math.PI) diff += 2 * Math.PI;
+                    shape.largeArcFlag = diff < -Math.PI ? 1 : 0;
+                }
+            } else if (handleIndex === 1) { // End Handle
+                const ang = getAngle(pos.x, pos.y);
+                shape.x2 = shape.cx + shape.rx * Math.cos(ang);
+                shape.y2 = shape.cy + shape.rx * Math.sin(ang);
+                
+                // Update largeArcFlag based on sweep
+                const ang1 = getAngle(shape.x1, shape.y1);
+                let diff = ang - ang1;
+                if (shape.sweepFlag === 1) { // CW
+                    while (diff < 0) diff += 2 * Math.PI;
+                    while (diff > 2 * Math.PI) diff -= 2 * Math.PI;
+                    shape.largeArcFlag = diff > Math.PI ? 1 : 0;
+                } else { // CCW
+                    while (diff > 0) diff -= 2 * Math.PI;
+                    while (diff < -2 * Math.PI) diff += 2 * Math.PI;
+                    shape.largeArcFlag = diff < -Math.PI ? 1 : 0;
+                }
+            } else if (handleIndex === 2) { // Radius Handle
+                const dist = Math.sqrt(Math.pow(pos.x - shape.cx, 2) + Math.pow(pos.y - shape.cy, 2));
+                const oldRx = shape.rx;
+                shape.rx = shape.ry = Math.max(1, dist);
+                
+                if (oldRx > 0) {
+                    const ratio = shape.rx / oldRx;
+                    shape.x1 = shape.cx + (shape.x1 - shape.cx) * ratio;
+                    shape.y1 = shape.cy + (shape.y1 - shape.cy) * ratio;
+                    shape.x2 = shape.cx + (shape.x2 - shape.cx) * ratio;
+                    shape.y2 = shape.cy + (shape.y2 - shape.cy) * ratio;
+                }
+            }
         }
     },
 
