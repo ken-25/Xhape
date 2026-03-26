@@ -11,17 +11,37 @@ const Parser = {
     parse(xaml) {
         if (!xaml) return { shapes: [], key: null };
 
-        // Geometryタグとx:Key属性を抽出
-        const geometryMatch = xaml.match(/<Geometry(?:\s+x:Key=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/Geometry>/);
-        const key = geometryMatch ? geometryMatch[1] : null;
-        const content = geometryMatch ? geometryMatch[2].trim() : xaml.trim();
+        // Geometry, StreamGeometry, PathGeometryタグを検索
+        const tagMatch = xaml.match(/<(StreamGeometry|PathGeometry|Geometry)(?:\s+x:Key=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/\1>/i);
+        
+        let key = null;
+        let content = "";
+
+        if (tagMatch) {
+            key = tagMatch[2] || null;
+            content = tagMatch[3].trim();
+        } else {
+            // <Path Data="..." /> 形式を検索
+            const pathMatch = xaml.match(/<Path(?:\s+x:Key=["']([^"']+)["'])?[^>]*\s+Data=["']([^"']+)["'][^>]*\/?>/i);
+            if (pathMatch) {
+                key = pathMatch[1] || null;
+                content = pathMatch[2].trim();
+            } else {
+                content = xaml.trim();
+            }
+        }
 
         // M (MoveTo) で分割して各図形のパスデータを取得
         // 肯定先読みを使用して 'M' を残す
         const segments = content.split(/(?=M)/).filter(s => s.trim());
         
         const shapes = segments.map(seg => this.parsePathSegment(seg.trim())).filter(s => s);
-        return { shapes, key };
+        
+        let format = 'StreamGeometry';
+        if (tagMatch) format = tagMatch[1];
+        else if (xaml.includes('<Path')) format = 'Path';
+
+        return { shapes, key, format };
     },
 
     /**
