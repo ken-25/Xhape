@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
         toolBtns: document.querySelectorAll('.tool-btn:not(#snap-toggle)'),
         snapToggle: document.getElementById('snap-toggle'),
         clearBtn: document.getElementById('clear-btn'),
-        copyBtn: document.getElementById('copy-btn')
+        copyBtn: document.getElementById('copy-btn'),
+        xamlFormatInput: document.getElementById('xaml-format')
     };
 
     const state = Editor.state;
@@ -45,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function syncEditorFromCanvas() {
         if (isInternalUpdate) return;
         isInternalUpdate = true;
-        const xaml = Generator.generate(state.shapes, state.xamlKey);
+        const xaml = Generator.generate(state.shapes, state.xamlKey, state.outputFormat);
         elements.xamlInput.value = xaml;
         isInternalUpdate = false;
     }
@@ -54,11 +55,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isInternalUpdate) return;
         isInternalUpdate = true;
         const xaml = elements.xamlInput.value;
-        const { shapes, key } = Parser.parse(xaml);
+        const { shapes, key, format } = Parser.parse(xaml);
         state.shapes = shapes;
         if (key) {
             state.xamlKey = key;
             elements.xamlKeyInput.value = key;
+        }
+        if (format) {
+            state.outputFormat = format;
+            elements.xamlFormatInput.value = format;
         }
         CanvasView.render(state.shapes, state.selectedShapeIndex);
         isInternalUpdate = false;
@@ -104,9 +109,58 @@ document.addEventListener('DOMContentLoaded', () => {
             syncCanvasFromEditor();
         });
 
+        // Tab and Enter key support in textarea
+        elements.xamlInput.addEventListener('keydown', (e) => {
+            const textarea = e.target;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+
+            // Tab key: Insert 4 spaces
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const value = textarea.value;
+                textarea.value = value.substring(0, start) + "    " + value.substring(end);
+                textarea.selectionStart = textarea.selectionEnd = start + 4;
+            }
+
+            // Enter key: Maintain indentation
+            if (e.key === 'Enter') {
+                const value = textarea.value;
+                const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                const currentLine = value.substring(lineStart, start);
+                const indentMatch = currentLine.match(/^\s*/);
+                const indent = indentMatch ? indentMatch[0] : "";
+                
+                // If it's a tag closure situation, we might want even smarter indent, 
+                // but basic inheritance is already a huge win.
+                if (indent.length > 0) {
+                    e.preventDefault();
+                    textarea.value = value.substring(0, start) + "\n" + indent + value.substring(end);
+                    textarea.selectionStart = textarea.selectionEnd = start + 1 + indent.length;
+                    // Trigger input event to sync
+                    textarea.dispatchEvent(new Event('input'));
+                }
+            }
+        });
+
+        // Auto-format on paste
+        elements.xamlInput.addEventListener('paste', (e) => {
+            // Briefly wait for paste to finish, then trigger sync/format
+            setTimeout(() => {
+                syncCanvasFromEditor();
+                // After syncing canvas, sync back to editor to apply formatting
+                syncEditorFromCanvas();
+            }, 0);
+        });
+
         // Key/Size Inputs
         elements.xamlKeyInput.addEventListener('input', (e) => {
             state.xamlKey = e.target.value;
+            syncEditorFromCanvas();
+        });
+
+        elements.xamlFormatInput.addEventListener('change', (e) => {
+            state.outputFormat = e.target.value;
             syncEditorFromCanvas();
         });
 

@@ -19,7 +19,8 @@ window.Editor = {
         handleIndex: -1,
         dragStartPos: { x: 0, y: 0 },
         initialShapeState: null,
-        isSnapEnabled: true
+        isSnapEnabled: true,
+        outputFormat: 'StreamGeometry' // 'StreamGeometry', 'PathGeometry', 'Geometry', 'Path'
     },
 
     /**

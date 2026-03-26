@@ -135,6 +135,15 @@
         <section class="output-pane">
             <div class="settings-group">
                 <div class="field">
+                    <label for="xaml-format">Tag Format</label>
+                    <select id="xaml-format">
+                        <option value="StreamGeometry">StreamGeometry</option>
+                        <option value="PathGeometry">PathGeometry</option>
+                        <option value="Path">Path Element</option>
+                        <option value="Geometry">Geometry (Resource)</option>
+                    </select>
+                </div>
+                <div class="field">
                     <label for="xaml-key">x:Key</label>
                     <input type="text" id="xaml-key" value="Symbol.Custom">
                 </div>
@@ -173,12 +182,9 @@
             <div class="usage-tips">
                 <h3>Tips</h3>
                 <ul>
-                    <li>マウスドラッグで図形を描画します。</li>
-                    <li><strong>マウスホイール</strong>で描画エリアを拡大・縮小できます。</li>
                     <li><strong>Shiftキー</strong>を押しながら描画すると、90度（水平・垂直）に固定されます。</li>
                     <li><strong>Selectツール</strong>で配置済みの図形を選択し、移動やリサイズが可能です。</li>
                     <li><strong>Pathツール</strong>はクリックで頂点を追加し、ダブルクリックで終了します。</li>
-                    <li>生成されたコードはリアルタイムで更新されます。</li>
                     <li>ショートカットキーはツールバーのアイコンにマウスオーバーすると表示されます。</li>
                 </ul>
             </div>

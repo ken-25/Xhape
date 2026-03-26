@@ -6,17 +6,28 @@ const Generator = {
      * 図形リストからXAMLコードを生成する
      * @param {Array} shapes 図形リスト
      * @param {string} key x:Keyの値
+     * @param {string} format 出力フォーマット ('StreamGeometry', 'PathGeometry', 'Geometry', 'Path')
      * @returns {string} XAML文字列
      */
-    generate(shapes, key = "Symbol.Custom") {
+    generate(shapes, key = "Symbol.Custom", format = "StreamGeometry") {
         const pathData = shapes
             .map(shape => this.shapeToPathData(shape))
             .filter(data => data) // nullを除外
-            .join("\n    ");
+            .join("\n    "); // 各図形を新しい行にする（インデント付き）
 
-        return `<Geometry x:Key="${key}">
-    ${pathData}
-</Geometry>`;
+        switch (format) {
+            case 'StreamGeometry':
+                return `<StreamGeometry x:Key="${key}">\n    ${pathData}\n</StreamGeometry>`;
+            case 'PathGeometry':
+                return `<PathGeometry x:Key="${key}">\n    ${pathData}\n</PathGeometry>`;
+            case 'Path':
+                // Path要素の場合は属性の中にデータを入れるため、単一行または属性ごとの改行を検討
+                // ここでは読みやすさのため属性を改行する形式にする
+                return `<Path\n    x:Key="${key}"\n    Data="${pathData.replace(/\n    /g, ' ')}"\n    Fill="Black" />`;
+            case 'Geometry':
+            default:
+                return `<Geometry x:Key="${key}">\n    ${pathData}\n</Geometry>`;
+        }
     },
 
     /**
