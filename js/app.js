@@ -22,7 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
         snapToggle: document.getElementById('snap-toggle'),
         clearBtn: document.getElementById('clear-btn'),
         copyBtn: document.getElementById('copy-btn'),
-        xamlFormatInput: document.getElementById('xaml-format')
+        xamlFormatInput: document.getElementById('xaml-format'),
+        xamlSeparatorInput: document.getElementById('xaml-separator'),
+        xamlCompactInput: document.getElementById('xaml-compact')
     };
 
     const state = Editor.state;
@@ -46,7 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function syncEditorFromCanvas() {
         if (isInternalUpdate) return;
         isInternalUpdate = true;
-        const xaml = Generator.generate(state.shapes, state.xamlKey, state.outputFormat);
+        const xaml = Generator.generate(
+            state.shapes, 
+            state.xamlKey, 
+            state.outputFormat, 
+            state.coordinateSeparator, 
+            state.isCompact
+        );
         elements.xamlInput.value = xaml;
         isInternalUpdate = false;
     }
@@ -143,13 +151,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Auto-format on paste
+        // Auto-sync canvas on paste (but preserve original code)
         elements.xamlInput.addEventListener('paste', (e) => {
-            // Briefly wait for paste to finish, then trigger sync/format
+            // Briefly wait for paste to finish, then trigger sync
             setTimeout(() => {
                 syncCanvasFromEditor();
-                // After syncing canvas, sync back to editor to apply formatting
-                syncEditorFromCanvas();
+                // Do NOT call syncEditorFromCanvas() here to maintain user's pasted format.
+                // It will be reformatted only when the user actually edits the shapes.
             }, 0);
         });
 
@@ -161,6 +169,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         elements.xamlFormatInput.addEventListener('change', (e) => {
             state.outputFormat = e.target.value;
+            syncEditorFromCanvas();
+        });
+        
+        elements.xamlSeparatorInput.addEventListener('change', (e) => {
+            state.coordinateSeparator = e.target.value;
+            syncEditorFromCanvas();
+        });
+
+        elements.xamlCompactInput.addEventListener('change', (e) => {
+            state.isCompact = (e.target.value === 'true');
             syncEditorFromCanvas();
         });
 
@@ -219,6 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'r': selectTool('rect'); break;
                 case 'c': selectTool('circle'); break;
                 case 'p': selectTool('path'); break;
+                case 'a': selectTool('arc'); break;
                 case 's': selectTool('select'); break;
                 case 'g': if (elements.snapToggle) elements.snapToggle.click(); break;
                 case 'escape': 
@@ -304,13 +323,56 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (state.currentTool === 'arc') {
+            const pos = getMousePos(e);
+            state.pathPoints.push(pos);
+            if (state.pathPoints.length === 3) {
+                const p0 = state.pathPoints[0];
+                const p1 = state.pathPoints[1];
+                const p2 = state.pathPoints[2];
+                const rx = Math.sqrt(Math.pow(p1.x - p0.x, 2) + Math.pow(p1.y - p0.y, 2));
+                
+                const ang1 = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+                const ang2 = Math.atan2(p2.y - p0.y, p2.x - p0.x);
+                let diff = ang2 - ang1;
+                while (diff < 0) diff += 2 * Math.PI;
+                while (diff > 2 * Math.PI) diff -= 2 * Math.PI;
+
+                const sweepFlag = 1; // CW
+                const largeArcFlag = diff > Math.PI ? 1 : 0;
+                
+                const x2_final = p0.x + rx * Math.cos(ang2);
+                const y2_final = p0.y + rx * Math.sin(ang2);
+
+                state.shapes.push({
+                    type: 'arc',
+                    cx: p0.x, cy: p0.y,
+                    x1: p1.x, y1: p1.y,
+                    x2: x2_final, y2: y2_final,
+                    rx: rx, ry: rx,
+                    rotation: 0,
+                    largeArcFlag: largeArcFlag,
+                    sweepFlag: sweepFlag
+                });
+                state.pathPoints = [];
+                CanvasView.clearPreview();
+                CanvasView.render(state.shapes, state.selectedShapeIndex);
+                syncEditorFromCanvas();
+            } else {
+                CanvasView.renderPreview(state.currentTool, state.currentShape, state.pathPoints, pos);
+            }
+            return;
+        }
+
         state.isDrawing = true;
         state.currentShape = {
             type: state.currentTool,
             startX: pos.x, startY: pos.y,
             x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y,
             x: pos.x, y: pos.y, width: 0, height: 0,
-            cx: pos.x, cy: pos.y, r: 0
+            cx: pos.x, cy: pos.y, r: 0,
+            x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y, // For arc/line
+            rx: 0, ry: 0, rotation: 0, largeArcFlag: 0, sweepFlag: 1
         };
     }
 
@@ -333,6 +395,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     shape.cx = initial.cx + dx; shape.cy = initial.cy + dy;
                 } else if (shape.type === 'path') {
                     shape.points = initial.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+                } else if (shape.type === 'arc') {
+                    shape.cx = initial.cx + dx; shape.cy = initial.cy + dy;
+                    shape.x1 = initial.x1 + dx; shape.y1 = initial.y1 + dy;
+                    shape.x2 = initial.x2 + dx; shape.y2 = initial.y2 + dy;
                 }
             } else if (state.dragMode === 'resize') {
                 let snappedPos = { ...pos };
@@ -352,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (state.currentTool === 'path' && state.pathPoints.length > 0) {
+        if ((state.currentTool === 'path' || state.currentTool === 'arc') && state.pathPoints.length > 0) {
             let mPos = { ...pos };
             if (e.shiftKey) {
                 const last = state.pathPoints[state.pathPoints.length - 1];
@@ -376,6 +442,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 s.width = Math.abs(mPos.x - s.startX); s.height = Math.abs(mPos.y - s.startY);
                 break;
             case 'circle': s.r = Math.sqrt(Math.pow(mPos.x - s.cx, 2) + Math.pow(mPos.y - s.cy, 2)); break;
+            case 'arc':
+                s.x2 = mPos.x; s.y2 = mPos.y;
+                // デフォルトの半径は始点と終点の距離にする
+                const dist = Math.sqrt(Math.pow(s.x2 - s.x1, 2) + Math.pow(s.y2 - s.y1, 2));
+                s.rx = s.ry = dist;
+                break;
         }
         CanvasView.renderPreview(state.currentTool, state.currentShape, state.pathPoints);
     }

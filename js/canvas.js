@@ -36,6 +36,10 @@ window.CanvasView = {
                 el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 const d = `M ${s.points.map(p => `${p.x},${p.y}`).join(' L ')}`;
                 el.setAttribute('d', d);
+            } else if (s.type === 'arc') {
+                el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const d = `M ${s.x1},${s.y1} A ${s.rx},${s.ry} ${s.rotation} ${s.largeArcFlag} ${s.sweepFlag} ${s.x2},${s.y2}`;
+                el.setAttribute('d', d);
             }
 
             if (el) {
@@ -71,6 +75,40 @@ window.CanvasView = {
             shape.points.forEach((p, i) => {
                 handles.push({ x: p.x, y: p.y, index: i });
             });
+        } else if (shape.type === 'arc') {
+            handles.push({ x: shape.x1, y: shape.y1, index: 0 });
+            handles.push({ x: shape.x2, y: shape.y2, index: 1 });
+            
+            // スイープ中央ハンドルの計算
+            const ang1 = Math.atan2(shape.y1 - shape.cy, shape.x1 - shape.cx);
+            const ang2 = Math.atan2(shape.y2 - shape.cy, shape.x2 - shape.cx);
+            let diff = ang2 - ang1;
+            
+            if (shape.sweepFlag === 1) { // CW
+                if (diff < 0) diff += 2 * Math.PI;
+                if (shape.largeArcFlag === 1 && diff < Math.PI) diff += 2 * Math.PI;
+                if (shape.largeArcFlag === 0 && diff > Math.PI) diff -= 2 * Math.PI;
+            } else { // CCW
+                if (diff > 0) diff -= 2 * Math.PI;
+                if (shape.largeArcFlag === 1 && diff > -Math.PI) diff -= 2 * Math.PI;
+                if (shape.largeArcFlag === 0 && diff < -Math.PI) diff += 2 * Math.PI;
+            }
+            
+            const midAng = ang1 + diff / 2;
+            handles.push({ 
+                x: shape.cx + shape.rx * Math.cos(midAng), 
+                y: shape.cy + shape.ry * Math.sin(midAng), 
+                index: 2 
+            });
+
+            // 中心位置のガイドを描画 (+)
+            const cross = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const s = 1.0;
+            cross.setAttribute('d', `M ${shape.cx - s},${shape.cy} L ${shape.cx + s},${shape.cy} M ${shape.cx},${shape.cy - s} L ${shape.cx},${shape.cy + s}`);
+            cross.setAttribute('stroke', 'var(--accent-color)');
+            cross.setAttribute('stroke-width', '0.5');
+            cross.style.pointerEvents = 'none';
+            this.elements.shapesLayer.appendChild(cross);
         }
 
         handles.forEach(h => {
@@ -103,6 +141,49 @@ window.CanvasView = {
             return;
         }
 
+        if (currentTool === 'arc') {
+            if (pathPoints.length === 1 && mousePos) {
+                const cx = pathPoints[0].x;
+                const cy = pathPoints[0].y;
+                const r = Math.sqrt(Math.pow(mousePos.x - cx, 2) + Math.pow(mousePos.y - cy, 2));
+                // 仮想的な円を表示
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', cx);
+                circle.setAttribute('cy', cy);
+                circle.setAttribute('r', r);
+                circle.classList.add('virtual-guide'); // CSSでdashedにする
+                layer.appendChild(circle);
+                
+                // 半径の直線
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+                line.setAttribute('x2', mousePos.x); line.setAttribute('y2', mousePos.y);
+                layer.appendChild(line);
+            } else if (pathPoints.length === 2 && mousePos) {
+                const cx = pathPoints[0].x;
+                const cy = pathPoints[0].y;
+                const x1 = pathPoints[1].x;
+                const y1 = pathPoints[1].y;
+                const rx = Math.sqrt(Math.pow(x1 - cx, 2) + Math.pow(y1 - cy, 2));
+                
+                const ang1 = Math.atan2(y1 - cy, x1 - cx);
+                const ang2 = Math.atan2(mousePos.y - cy, mousePos.x - cx);
+                let diff = ang2 - ang1;
+                while (diff < 0) diff += 2 * Math.PI;
+                while (diff > 2 * Math.PI) diff -= 2 * Math.PI;
+                const large = diff > Math.PI ? 1 : 0;
+                
+                const x2 = cx + rx * Math.cos(ang2);
+                const y2 = cy + rx * Math.sin(ang2);
+                
+                const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const d = `M ${x1},${y1} A ${rx},${rx} 0 ${large} 1 ${x2},${y2}`;
+                el.setAttribute('d', d);
+                layer.appendChild(el);
+            }
+            return;
+        }
+
         if (!currentShape) return;
         const s = currentShape;
         let el;
@@ -119,6 +200,10 @@ window.CanvasView = {
             el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             el.setAttribute('cx', s.cx); el.setAttribute('cy', s.cy);
             el.setAttribute('r', s.r);
+        } else if (s.type === 'arc') {
+            el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const d = `M ${s.x1},${s.y1} A ${s.rx},${s.ry} ${s.rotation} ${s.largeArcFlag} ${s.sweepFlag} ${s.x2},${s.y2}`;
+            el.setAttribute('d', d);
         }
 
         if (el) layer.appendChild(el);
